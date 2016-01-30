@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html>
+  <head>    
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <title>Wikipedia Trends</title>
+    <link href='/static/css/all.min.css?v=1.14' rel='stylesheet' type='text/css' />
+   <!--<script type="text/javascript" src="d3/d3.v2.js"></script>-->
+    <script src="http://d3js.org/d3.v2.js"></script>
+    <!-- Note: I made good use of the sample code provided by the D3JS community and extended it to fit my needs to create this simple dashboard -->
+    <style type="text/css">
+
+#pickADate {
+    position:absolute;
+    top:20px;
+    left:450px;
+    width:400px;
+    height: 50px; 
+}
+
+#hours24 {
+    position:absolute;
+    top:100px;
+    left:90px;
+    width:400px;
+    height: 400px; 
+}
+
+#days30 {
+    position:absolute;
+    top:100px;
+    left:600px;
+    width:400px;
+    height: 400px; 
+}
+
+#pieChart, #pieChart2 {    
+    position:absolute;
+    top:10px;
+    left:90px;
+    width:400px;
+    height: 400px; 
+}
+
+
+#lineChart, #lineChart2 {    
+    position:absolute;
+    top:430px;
+    left:10px;
+    height: 170px;
+}
+
+.slice {
+   font-size: 12pt;
+   font-family: Verdana;
+   fill: white; //svg specific - instead of color
+   font-weight: bold;   
+        } 
+
+/*for line chart*/
+.axis path, .axis line {
+    fill: none;
+    stroke: black;
+    shape-rendering: crispEdges; //The shape-rendering property is an SVG attribute, used here to make sure our axis and its tick mark lines are pixel-perfect. 
+}
+
+.line {
+  fill: none;
+  /*stroke: steelblue;*/
+  stroke-width: 3px;
+}
+
+.dot {
+  /*fill: white;*/
+  /*stroke: steelblue;*/
+  stroke-width: 1.5px;
+  }
+                
+
+.axis text {
+    font-family: Verdana;
+    font-size: 11px;
+}
+
+.title {
+     font-family: Verdana;
+    font-size: 15px;    
+        
+}
+
+.xAxis {
+    font-family: verdana;
+    font-size: 11px;
+    fill: black;
+}  
+
+.yAxis {
+    font-family: verdana;
+    font-size: 11px;
+    fill: white;
+}
+
+  
+table {
+    border-collapse:collapse;
+    border: 0px;    
+    font-family: Verdana;   
+    color: #5C5558;
+    font-size: 12px;
+    text-align: right;          
+}
+
+td {
+    padding-left: 10px;     
+}
+
+#lineChartTitle1 {
+    font-family: Verdana;
+    font-size  : 14px;
+    fill       : lightgrey;
+    font-weight: bold;
+    text-anchor: middle;
+}
+
+#lineChartTitle2 {
+    font-family: Verdana;
+    font-size  : 72px;
+    fill       : grey;
+    text-anchor: middle;
+    font-weight: bold;
+    /*font-style: italic;*/
+}
+                 
+    </style>
+  </head>
+  <body>
+  <div id="pickADate" align="center"> 
+    
+      <form action="#">
+           <h2>Pick a date !</h2>
+              <input placeholder="01/01/2011" type="date" name="date" min="2011-01-01" max="2011-03-31"/>
+              <input type="submit" />
+      </form>
+    </div>
+    <div id="hours24" align="center">
+    <div id="pieChart"></div>
+    <div id="lineChart"></div>
+    </div>
+    <div id="days30" align="center">
+    <div id="pieChart2"></div>
+    <div id="lineChart2"></div>
+    </div>
+    <script type="text/javascript">
+    
+/*
+################ FORMATS ##################
+-------------------------------------------
+*/
+
+
+var     formatAsPercentage = d3.format(""),
+        formatAsPercentage1Dec = d3.format(".1%"),
+        formatAsInteger = d3.format(","),
+        fsec = d3.time.format("%S s"),
+        fmin = d3.time.format("%M m"),
+        fhou = d3.time.format("%H h"),
+        fwee = d3.time.format("%a"),
+        fdat = d3.time.format("%d d"),
+        fmon = d3.time.format("%b")
+        ;
+
+/*
+############# PIE CHART ###################
+-------------------------------------------
+*/
+
+
+
+function dsPieChart(){
+d3.csv("/static/data/data_piechart.csv?_=" + Math.random(), function(nodes) {    
+    var dataset = new Array();
+    var index = 0;
+    // Compute the distinct nodes from the links.
+    nodes.forEach(function(node) {
+      if (index != 0){
+    dataset.push(node); }
+    index ++;
+    });
+    var    width = 400,
+           height = 400,
+           outerRadius = Math.min(width, height) / 2,
+           innerRadius = outerRadius * .999,   
+           // for animation
+           innerRadiusFinal = outerRadius * .5,
+           innerRadiusFinal3 = outerRadius* .45,
+           color = d3.scale.category20()    //builtin range of colors
+           ;
+        
+    var vis = d3.select("#pieChart")
+         .append("svg:svg")              //create the SVG element inside the <body>
+         .data([dataset])                   //associate our data with the document
+             .attr("width", width)           //set the width and height of our visualization (these will be attributes of the <svg> tag
+             .attr("height", height)
+                .append("svg:g")                //make a group to hold our pie chart
+             .attr("transform", "translate(" + outerRadius + "," + outerRadius + ")")    //move the center of the pie chart from 0, 0 to radius, radius
+                ;
+                
+   var arc = d3.svg.arc()              //this will create <path> elements for us using arc data
+            .outerRadius(outerRadius).innerRadius(innerRadius);
+   
+   // for animation
+   var arcFinal = d3.svg.arc().innerRadius(innerRadiusFinal).outerRadius(outerRadius);
+    var arcFinal3 = d3.svg.arc().innerRadius(innerRadiusFinal3).outerRadius(outerRadius);
+
+   var pie = d3.layout.pie()           //this will create arc data for us given a list of values
+        .value(function(d) { return d.measure; });    //we must tell it out to access the value of each element in our data array
+
+   var arcs = vis.selectAll("g.slice")     //this selects all <g> elements with class slice (there aren't any yet)
+        .data(pie)                          //associate the generated pie data (an array of arcs, each having startAngle, endAngle and value properties) 
+        .enter()                            //this will create <g> elements for every "extra" data element that should be associated with a selection. The result is creating a <g> for every object in the data array
+            .append("svg:g")                //create a group to hold each slice (we will have a <path> and a <text> element associated with each slice)
+               .attr("class", "slice")    //allow us to style things in the slices (like text)
+               .on("mouseover", mouseover)
+                    .on("mouseout", mouseout)
+                    .on("click", up)
+                    ;
+                    
+        arcs.append("svg:path")
+               .attr("fill", function(d, i) { return color(i); } ) //set the color for each slice to be chosen from the color function defined above
+               .attr("d", arc)     //this creates the actual SVG path using the associated data (pie) with the arc drawing function
+                    .append("svg:title") //mouseover title showing the figures
+                   .text(function(d) { return d.data.category + ": " + formatAsPercentage(d.data.measure); });          
+
+        d3.selectAll("g.slice").selectAll("path").transition()
+                .duration(750)
+                .delay(10)
+                .attr("d", arcFinal )
+                ;
+    
+      // Add a label to the larger arcs, translated to the arc centroid and rotated.
+      // source: http://bl.ocks.org/1305337#index.html
+      arcs.filter(function(d) { return d.endAngle - d.startAngle > .2; })
+            .append("svg:text")
+          .attr("dy", ".35em")
+          .attr("text-anchor", "middle")
+          .attr("transform", function(d) { return "translate(" + arcFinal.centroid(d) + ")rotate(" + angle(d) + ")"; })
+          //.text(function(d) { return formatAsPercentage(d.value); })
+          .text(function(d) { return d.data.category; })
+          ;
+       
+       // Computes the label angle of an arc, converting from radians to degrees.
+        function angle(d) {
+            var a = (d.startAngle + d.endAngle) * 90 / Math.PI - 90;
+            return a > 90 ? a - 180 : a;
+        }
+            
+        
+        // Pie chart title          
+        vis.append("svg:text")
+            .attr("dy", ".35em")
+          .attr("text-anchor", "middle")
+          .text("Last 24 hours")
+          .attr("class","title")
+          ;         
+
+
+        
+    function mouseover() {
+      d3.select(this).select("path").transition()
+          .duration(750)
+                    //.attr("stroke","red")
+                    //.attr("stroke-width", 1.5)
+                    .attr("d", arcFinal3)
+                    ;
+    }
+    
+    function mouseout() {
+      d3.select(this).select("path").transition()
+          .duration(750)
+                    //.attr("stroke","blue")
+                    //.attr("stroke-width", 1.5)
+                    .attr("d", arcFinal)
+                    ;
+    }
+    
+    function up(d, i) {
+    
+                /* update bar chart when user selects piece of the pie chart */
+                //updateBarChart(dataset[i].category);
+                // updateBarChart(d.data.category, color(i));
+                updateLineChart(d.data.category, color(i));
+             
+    }
+});
+}
+
+dsPieChart();
+
+/*
+############# LINE CHART ##################
+-------------------------------------------
+*/
+var datasetLineChart = new Array();
+d3.csv("/static/data/data_linechart.csv?_=" + Math.random(), function(nodes) {    
+    var index = 0;
+    // Compute the distinct nodes from the links.
+    nodes.forEach(function(node) {
+      if (index != 0){
+    datasetLineChart.push(node); }
+    index ++;
+    });
+
+    dsLineChart();
+});
+// set initial category value
+var group = "All";
+
+function datasetLineChartChosen(group) {
+    var ds = [];
+    for (x in datasetLineChart) {
+         if(datasetLineChart[x].group==group){
+            ds.push(datasetLineChart[x]);
+         } 
+        }
+    return ds;
+}
+
+function dsLineChartBasics() {
+
+    var margin = {top: 20, right: 10, bottom: 0, left: 50},
+        width = 500 - margin.left - margin.right,
+        height = 150 - margin.top - margin.bottom
+        ;
+        
+        return {
+            margin : margin, 
+            width : width, 
+            height : height
+        }           
+        ;
+}
+
+
+function dsLineChart() {
+
+    var firstDatasetLineChart = datasetLineChartChosen(group);    
+    
+    var basics = dsLineChartBasics();
+    
+    var margin = basics.margin,
+        width = basics.width,
+       height = basics.height
+        ;
+
+    var xScale = d3.scale.linear()
+        .domain([0, firstDatasetLineChart.length-1])
+        .range([0, width])
+        ;
+
+    var yScale = d3.scale.linear()
+        .domain([0, d3.max(firstDatasetLineChart, function(d) { return d.measure; })])
+        .range([height, 0])
+        ;
+    
+    var line = d3.svg.line()
+        //.x(function(d) { return xScale(d.category); })
+        .x(function(d, i) { return xScale(i); })
+        .y(function(d) { return yScale(d.measure); })
+        ;
+    
+    var svg = d3.select("#lineChart").append("svg")
+        .datum(firstDatasetLineChart)
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        // create group and move it so that margins are respected (space for axis and title)
+        
+    var plot = svg
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        .attr("id", "lineChartPlot")
+        ;
+
+        /* descriptive titles as part of plot -- start */
+    var dsLength=firstDatasetLineChart.length;
+
+    plot.append("text")
+        .text(firstDatasetLineChart[dsLength-1].measure)
+        .attr("id","lineChartTitle2")
+        .attr("x",width/2)
+        .attr("y",height/2) 
+        ;
+    /* descriptive titles -- end */
+        
+    plot.append("path")
+        .attr("class", "line")
+        .attr("d", line)    
+        // add color
+        .attr("stroke", "lightgrey")
+        ;
+      
+    plot.selectAll(".dot")
+        .data(firstDatasetLineChart)
+         .enter().append("circle")
+        .attr("class", "dot")
+        //.attr("stroke", function (d) { return d.measure==datasetMeasureMin ? "red" : (d.measure==datasetMeasureMax ? "green" : "steelblue") } )
+        .attr("fill", function (d) { return d.measure==d3.min(firstDatasetLineChart, function(d) { return d.measure; }) ? "red" : (d.measure==d3.max(firstDatasetLineChart, function(d) { return d.measure; }) ? "green" : "white") } )
+        //.attr("stroke-width", function (d) { return d.measure==datasetMeasureMin || d.measure==datasetMeasureMax ? "3px" : "1.5px"} )
+        .attr("cx", line.x())
+        .attr("cy", line.y())
+        .attr("r", 3.5)
+        .attr("stroke", "lightgrey")
+        .append("title")
+        .text(function(d) { return d.category + ": " + formatAsInteger(d.measure); })
+        ;
+
+    svg.append("text")
+        .text("Trending")
+        .attr("id","lineChartTitle1")   
+        .attr("x",margin.left + ((width + margin.right)/2))
+        .attr("y", 15)
+        ;
+
+}
+
+
+
+
+ /* ** UPDATE CHART ** */
+ 
+/* updates bar chart on request */
+function updateLineChart(group, colorChosen) {
+
+    var currentDatasetLineChart = datasetLineChartChosen(group);   
+
+    var basics = dsLineChartBasics();
+    
+    var margin = basics.margin,
+        width = basics.width,
+       height = basics.height
+        ;
+
+    var xScale = d3.scale.linear()
+        .domain([0, currentDatasetLineChart.length-1])
+        .range([0, width])
+        ;
+
+    var yScale = d3.scale.linear()
+        .domain([0, d3.max(currentDatasetLineChart, function(d) { return d.measure; })])
+        .range([height, 0])
+        ;
+    
+    var line = d3.svg.line()
+    .x(function(d, i) { return xScale(i); })
+    .y(function(d) { return yScale(d.measure); })
+    ;
+
+   var plot = d3.select("#lineChartPlot")
+    .datum(currentDatasetLineChart)
+       ;
+       
+    /* descriptive titles as part of plot -- start */
+    var dsLength=currentDatasetLineChart.length;
+    
+    plot.select("text")
+        .text(currentDatasetLineChart[dsLength-1].measure)
+        ;
+    /* descriptive titles -- end */
+       
+    plot
+    .select("path")
+        .transition()
+        .duration(750)              
+       .attr("class", "line")
+       .attr("d", line) 
+       // add color
+        .attr("stroke", colorChosen)
+       ;
+       
+    var path = plot
+        .selectAll(".dot")
+       .data(currentDatasetLineChart)
+       .transition()
+        .duration(750)
+       .attr("class", "dot")
+       .attr("fill", function (d) { return d.measure==d3.min(currentDatasetLineChart, function(d) { return d.measure; }) ? "red" : (d.measure==d3.max(currentDatasetLineChart, function(d) { return d.measure; }) ? "green" : "white") } )
+       .attr("cx", line.x())
+       .attr("cy", line.y())
+       .attr("r", 3.5)
+       // add color
+        .attr("stroke", colorChosen)
+       ;
+       
+       path
+       .selectAll("title")
+       .text(function(d) { return d.category + ": " + formatAsInteger(d.measure); })     
+       ;  
+
+}
+
+// 
+// 30 DAYS
+// 
+
+function dsPieChart2(){
+d3.csv("/static/data/data_piechart.csv?_=" + Math.random(), function(nodes) {    
+    var dataset = new Array();
+    var index = 0;
+    // Compute the distinct nodes from the links.
+    nodes.forEach(function(node) {
+      if (index != 0){
+    dataset.push(node); }
+    index ++;
+    });
+    var    width = 400,
+           height = 400,
+           outerRadius = Math.min(width, height) / 2,
+           innerRadius = outerRadius * .999,   
+           // for animation
+           innerRadiusFinal = outerRadius * .5,
+           innerRadiusFinal3 = outerRadius* .45,
+           color = d3.scale.category20()    //builtin range of colors
+           ;
+        
+    var vis = d3.select("#pieChart2")
+         .append("svg:svg")              //create the SVG element inside the <body>
+         .data([dataset])                   //associate our data with the document
+             .attr("width", width)           //set the width and height of our visualization (these will be attributes of the <svg> tag
+             .attr("height", height)
+                .append("svg:g")                //make a group to hold our pie chart
+             .attr("transform", "translate(" + outerRadius + "," + outerRadius + ")")    //move the center of the pie chart from 0, 0 to radius, radius
+                ;
+                
+   var arc = d3.svg.arc()              //this will create <path> elements for us using arc data
+            .outerRadius(outerRadius).innerRadius(innerRadius);
+   
+   // for animation
+   var arcFinal = d3.svg.arc().innerRadius(innerRadiusFinal).outerRadius(outerRadius);
+    var arcFinal3 = d3.svg.arc().innerRadius(innerRadiusFinal3).outerRadius(outerRadius);
+
+   var pie = d3.layout.pie()           //this will create arc data for us given a list of values
+        .value(function(d) { return d.measure; });    //we must tell it out to access the value of each element in our data array
+
+   var arcs = vis.selectAll("g.slice")     //this selects all <g> elements with class slice (there aren't any yet)
+        .data(pie)                          //associate the generated pie data (an array of arcs, each having startAngle, endAngle and value properties) 
+        .enter()                            //this will create <g> elements for every "extra" data element that should be associated with a selection. The result is creating a <g> for every object in the data array
+            .append("svg:g")                //create a group to hold each slice (we will have a <path> and a <text> element associated with each slice)
+               .attr("class", "slice")    //allow us to style things in the slices (like text)
+               .on("mouseover", mouseover2)
+                    .on("mouseout", mouseout2)
+                    .on("click", up2)
+                    ;
+                    
+        arcs.append("svg:path")
+               .attr("fill", function(d, i) { return color(i); } ) //set the color for each slice to be chosen from the color function defined above
+               .attr("d", arc)     //this creates the actual SVG path using the associated data (pie) with the arc drawing function
+                    .append("svg:title") //mouseover title showing the figures
+                   .text(function(d) { return d.data.category + ": " + formatAsPercentage(d.data.measure); });          
+
+        d3.selectAll("g.slice").selectAll("path").transition()
+                .duration(750)
+                .delay(10)
+                .attr("d", arcFinal )
+                ;
+    
+      // Add a label to the larger arcs, translated to the arc centroid and rotated.
+      // source: http://bl.ocks.org/1305337#index.html
+      arcs.filter(function(d) { return d.endAngle - d.startAngle > .2; })
+            .append("svg:text")
+          .attr("dy", ".35em")
+          .attr("text-anchor", "middle")
+          .attr("transform", function(d) { return "translate(" + arcFinal.centroid(d) + ")rotate(" + angle(d) + ")"; })
+          //.text(function(d) { return formatAsPercentage(d.value); })
+          .text(function(d) { return d.data.category; })
+          ;
+       
+       // Computes the label angle of an arc, converting from radians to degrees.
+        function angle(d) {
+            var a = (d.startAngle + d.endAngle) * 90 / Math.PI - 90;
+            return a > 90 ? a - 180 : a;
+        }
+            
+        
+        // Pie chart title          
+        vis.append("svg:text")
+            .attr("dy", ".35em")
+          .attr("text-anchor", "middle")
+          .text("Last 30 days")
+          .attr("class","title")
+          ;         
+
+
+        
+    function mouseover2() {
+      d3.select(this).select("path").transition()
+          .duration(750)
+                    //.attr("stroke","red")
+                    //.attr("stroke-width", 1.5)
+                    .attr("d", arcFinal3)
+                    ;
+    }
+    
+    function mouseout2() {
+      d3.select(this).select("path").transition()
+          .duration(750)
+                    //.attr("stroke","blue")
+                    //.attr("stroke-width", 1.5)
+                    .attr("d", arcFinal)
+                    ;
+    }
+    
+    function up2(d, i) {
+    
+                /* update bar chart when user selects piece of the pie chart */
+                //updateBarChart(dataset[i].category);
+                // updateBarChart(d.data.category, color(i));
+                updateLineChart2(d.data.category, color(i));
+             
+    }
+});
+}
+
+dsPieChart2();
+
+/*
+############# LINE CHART ##################
+-------------------------------------------
+*/
+var datasetLineChart2 = new Array();
+d3.csv("/static/data/data_linechart.csv?_=" + Math.random(), function(nodes) {    
+    var index = 0;
+    // Compute the distinct nodes from the links.
+    nodes.forEach(function(node) {
+      if (index != 0){
+    datasetLineChart2.push(node); }
+    index ++;
+    });
+
+    dsLineChart2();
+});
+// set initial category value
+var group = "All";
+
+function datasetLineChartChosen2(group) {
+    var ds = [];
+    for (x in datasetLineChart2) {
+         if(datasetLineChart2[x].group==group){
+            ds.push(datasetLineChart2[x]);
+         } 
+        }
+    return ds;
+}
+
+function dsLineChartBasics2() {
+
+    var margin = {top: 20, right: 10, bottom: 0, left: 50},
+        width = 500 - margin.left - margin.right,
+        height = 150 - margin.top - margin.bottom
+        ;
+        
+        return {
+            margin : margin, 
+            width : width, 
+            height : height
+        }           
+        ;
+}
+
+
+function dsLineChart2() {
+
+    var firstDatasetLineChart2 = datasetLineChartChosen2(group);    
+    
+    var basics = dsLineChartBasics2();
+    
+    var margin = basics.margin,
+        width = basics.width,
+       height = basics.height
+        ;
+
+    var xScale = d3.scale.linear()
+        .domain([0, firstDatasetLineChart2.length-1])
+        .range([0, width])
+        ;
+
+    var yScale = d3.scale.linear()
+        .domain([0, d3.max(firstDatasetLineChart2, function(d) { return d.measure; })])
+        .range([height, 0])
+        ;
+    
+    var line = d3.svg.line()
+        //.x(function(d) { return xScale(d.category); })
+        .x(function(d, i) { return xScale(i); })
+        .y(function(d) { return yScale(d.measure); })
+        ;
+    
+    var svg = d3.select("#lineChart2").append("svg")
+        .datum(firstDatasetLineChart2)
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        // create group and move it so that margins are respected (space for axis and title)
+        
+    var plot = svg
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        .attr("id", "lineChartPlot2")
+        ;
+
+        /* descriptive titles as part of plot -- start */
+    var dsLength=firstDatasetLineChart2.length;
+
+    plot.append("text")
+        .text(firstDatasetLineChart2[dsLength-1].measure)
+        .attr("id","lineChartTitle2")
+        .attr("x",width/2)
+        .attr("y",height/2) 
+        ;
+    /* descriptive titles -- end */
+        
+    plot.append("path")
+        .attr("class", "line")
+        .attr("d", line)    
+        // add color
+        .attr("stroke", "lightgrey")
+        ;
+      
+    plot.selectAll(".dot")
+        .data(firstDatasetLineChart2)
+         .enter().append("circle")
+        .attr("class", "dot")
+        //.attr("stroke", function (d) { return d.measure==datasetMeasureMin ? "red" : (d.measure==datasetMeasureMax ? "green" : "steelblue") } )
+        .attr("fill", function (d) { return d.measure==d3.min(firstDatasetLineChart2, function(d) { return d.measure; }) ? "red" : (d.measure==d3.max(firstDatasetLineChart2, function(d) { return d.measure; }) ? "green" : "white") } )
+        //.attr("stroke-width", function (d) { return d.measure==datasetMeasureMin || d.measure==datasetMeasureMax ? "3px" : "1.5px"} )
+        .attr("cx", line.x())
+        .attr("cy", line.y())
+        .attr("r", 3.5)
+        .attr("stroke", "lightgrey")
+        .append("title")
+        .text(function(d) { return d.category + ": " + formatAsInteger(d.measure); })
+        ;
+
+    svg.append("text")
+        .text("Trending")
+        .attr("id","lineChartTitle1")   
+        .attr("x",margin.left + ((width + margin.right)/2))
+        .attr("y", 15)
+        ;
+
+}
+
+
+
+
+ /* ** UPDATE CHART ** */
+ 
+/* updates bar chart on request */
+function updateLineChart2(group, colorChosen) {
+
+    var currentDatasetLineChart2 = datasetLineChartChosen2(group);   
+
+    var basics = dsLineChartBasics2();
+    
+    var margin = basics.margin,
+        width = basics.width,
+       height = basics.height
+        ;
+
+    var xScale = d3.scale.linear()
+        .domain([0, currentDatasetLineChart2.length-1])
+        .range([0, width])
+        ;
+
+    var yScale = d3.scale.linear()
+        .domain([0, d3.max(currentDatasetLineChart2, function(d) { return d.measure; })])
+        .range([height, 0])
+        ;
+    
+    var line = d3.svg.line()
+    .x(function(d, i) { return xScale(i); })
+    .y(function(d) { return yScale(d.measure); })
+    ;
+
+   var plot = d3.select("#lineChartPlot2")
+    .datum(currentDatasetLineChart2)
+       ;
+       
+    /* descriptive titles as part of plot -- start */
+    var dsLength=currentDatasetLineChart2.length;
+    
+    plot.select("text")
+        .text(currentDatasetLineChart2[dsLength-1].measure)
+        ;
+    /* descriptive titles -- end */
+       
+    plot
+    .select("path")
+        .transition()
+        .duration(750)              
+       .attr("class", "line")
+       .attr("d", line) 
+       // add color
+        .attr("stroke", colorChosen)
+       ;
+       
+    var path = plot
+        .selectAll(".dot")
+       .data(currentDatasetLineChart2)
+       .transition()
+        .duration(750)
+       .attr("class", "dot")
+       .attr("fill", function (d) { return d.measure==d3.min(currentDatasetLineChart2, function(d) { return d.measure; }) ? "red" : (d.measure==d3.max(currentDatasetLineChart2, function(d) { return d.measure; }) ? "green" : "white") } )
+       .attr("cx", line.x())
+       .attr("cy", line.y())
+       .attr("r", 3.5)
+       // add color
+        .attr("stroke", colorChosen)
+       ;
+       
+       path
+       .selectAll("title")
+       .text(function(d) { return d.category + ": " + formatAsInteger(d.measure); })     
+       ;  
+
+}
+
+    </script>
+  </body>
+</html>

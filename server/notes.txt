@@ -1,0 +1,7 @@
+/* Launch pyspark */
+dse pyspark --conf spark.executor.memory=3g
+
+/* Install dependencies */
+sudo apt-get install gcc python-setuptools python-dev build-essential python-pip  
+sudo pip install --upgrade setuptools 
+sudo pip install cassandra-driver

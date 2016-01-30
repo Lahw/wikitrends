@@ -1,0 +1,6 @@
+nosql.pem
+/client/venv/*
+# Elastic Beanstalk Files
+/client/.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
