@@ -11,7 +11,7 @@
 
 #pickADate {
     position:absolute;
-    top:20px;
+    top:10px;
     left:450px;
     width:400px;
     height: 50px; 
@@ -19,15 +19,15 @@
 
 #hours24 {
     position:absolute;
-    top:100px;
+    top:80px;
     left:90px;
     width:400px;
-    height: 400px; 
+    height: 380px; 
 }
 
 #days30 {
     position:absolute;
-    top:100px;
+    top:80px;
     left:600px;
     width:400px;
     height: 400px; 
@@ -69,7 +69,7 @@
   stroke-width: 3px;
 }
 
-.dot {
+.dot, .dot_2 {
   /*fill: white;*/
   /*stroke: steelblue;*/
   stroke-width: 1.5px;
@@ -113,15 +113,15 @@ td {
     padding-left: 10px;     
 }
 
-#lineChartTitle1 {
+#lineChartTitle1, #lineChartTitle1_2 {
     font-family: Verdana;
-    font-size  : 14px;
+    font-size  : 24px;
     fill       : lightgrey;
     font-weight: bold;
     text-anchor: middle;
 }
 
-#lineChartTitle2 {
+#lineChartTitle2, #lineChartTitle2_2 {
     font-family: Verdana;
     font-size  : 72px;
     fill       : grey;
@@ -137,7 +137,7 @@ td {
     
       <form action="#">
            <h2>Pick a date !</h2>
-              <input placeholder="01/01/2011" type="date" name="date" min="2011-01-01" max="2011-03-31"/>
+              <input placeholder="Exemple: 2011-01-31" type="date" name="date" min="2011-01-01" max="2011-03-31"/>
               <input type="submit" />
       </form>
     </div>
@@ -151,22 +151,14 @@ td {
     </div>
     <script type="text/javascript">
     
-/*
-################ FORMATS ##################
--------------------------------------------
-*/
 
-
-var     formatAsPercentage = d3.format(""),
-        formatAsPercentage1Dec = d3.format(".1%"),
-        formatAsInteger = d3.format(","),
-        fsec = d3.time.format("%S s"),
-        fmin = d3.time.format("%M m"),
-        fhou = d3.time.format("%H h"),
-        fwee = d3.time.format("%a"),
-        fdat = d3.time.format("%d d"),
-        fmon = d3.time.format("%b")
-        ;
+function sum_measure( obj ) {
+  var sum = 0;
+  for( var key in obj ) {
+      sum += parseInt( obj[key].measure );
+  }
+  return sum;
+}
 
 /*
 ############# PIE CHART ###################
@@ -176,7 +168,7 @@ var     formatAsPercentage = d3.format(""),
 
 
 function dsPieChart(){
-d3.csv("/static/data/data_piechart.csv?_=" + Math.random(), function(nodes) {    
+d3.csv("/static/data/data24hours_piechart.csv?_=" + Math.random(), function(nodes) {    
     var dataset = new Array();
     var index = 0;
     // Compute the distinct nodes from the links.
@@ -228,7 +220,7 @@ d3.csv("/static/data/data_piechart.csv?_=" + Math.random(), function(nodes) {
                .attr("fill", function(d, i) { return color(i); } ) //set the color for each slice to be chosen from the color function defined above
                .attr("d", arc)     //this creates the actual SVG path using the associated data (pie) with the arc drawing function
                     .append("svg:title") //mouseover title showing the figures
-                   .text(function(d) { return d.data.category + ": " + formatAsPercentage(d.data.measure); });          
+                   .text(function(d) { return d.data.category + ": " + d.data.measure; });          
 
         d3.selectAll("g.slice").selectAll("path").transition()
                 .duration(750)
@@ -300,11 +292,13 @@ dsPieChart();
 -------------------------------------------
 */
 var datasetLineChart = new Array();
-d3.csv("/static/data/data_linechart.csv?_=" + Math.random(), function(nodes) {    
+d3.csv("/static/data/data24hours_linechart.csv?_=" + Math.random(), function(nodes) {    
     var index = 0;
     // Compute the distinct nodes from the links.
     nodes.forEach(function(node) {
       if (index != 0){
+        node.measure = parseInt(node.measure);
+        node.category = parseInt(node.category);
     datasetLineChart.push(node); }
     index ++;
     });
@@ -318,15 +312,24 @@ function datasetLineChartChosen(group) {
     var ds = [];
     for (x in datasetLineChart) {
          if(datasetLineChart[x].group==group){
+            datasetLineChart[x].measure = parseInt(datasetLineChart[x].measure)
+            datasetLineChart[x].category = parseInt(datasetLineChart[x].category)
             ds.push(datasetLineChart[x]);
          } 
         }
+    ds.sort(function(a, b){
+        var keyA = parseInt(a.category),
+            keyB = parseInt(b.category);
+        if(keyA < keyB) return -1;
+        if(keyA > keyB) return 1;
+        return 0;
+    });
     return ds;
 }
 
 function dsLineChartBasics() {
 
-    var margin = {top: 20, right: 10, bottom: 0, left: 50},
+    var margin = {top: 20, right: 10, bottom: 5, left: 50},
         width = 500 - margin.left - margin.right,
         height = 150 - margin.top - margin.bottom
         ;
@@ -357,10 +360,9 @@ function dsLineChart() {
         ;
 
     var yScale = d3.scale.linear()
-        .domain([0, d3.max(firstDatasetLineChart, function(d) { return d.measure; })])
-        .range([height, 0])
+        .domain([d3.max(firstDatasetLineChart, function(d) { return d.measure; }), 0])
+        .range([0, height])
         ;
-    
     var line = d3.svg.line()
         //.x(function(d) { return xScale(d.category); })
         .x(function(d, i) { return xScale(i); })
@@ -383,7 +385,7 @@ function dsLineChart() {
     var dsLength=firstDatasetLineChart.length;
 
     plot.append("text")
-        .text(firstDatasetLineChart[dsLength-1].measure)
+        .text(sum_measure(firstDatasetLineChart))
         .attr("id","lineChartTitle2")
         .attr("x",width/2)
         .attr("y",height/2) 
@@ -409,11 +411,12 @@ function dsLineChart() {
         .attr("r", 3.5)
         .attr("stroke", "lightgrey")
         .append("title")
-        .text(function(d) { return d.category + ": " + formatAsInteger(d.measure); })
+        .text(function(d) { return d.category + "h: " + d.measure; })
         ;
 
     svg.append("text")
-        .text("Trending")
+        .data(firstDatasetLineChart)
+        .text(function(d) { return d.group; })
         .attr("id","lineChartTitle1")   
         .attr("x",margin.left + ((width + margin.right)/2))
         .attr("y", 15)
@@ -444,10 +447,10 @@ function updateLineChart(group, colorChosen) {
         ;
 
     var yScale = d3.scale.linear()
-        .domain([0, d3.max(currentDatasetLineChart, function(d) { return d.measure; })])
-        .range([height, 0])
+        .domain([d3.max(currentDatasetLineChart, function(d) { return d.measure; }), 0])
+        .range([0, height])
         ;
-    
+
     var line = d3.svg.line()
     .x(function(d, i) { return xScale(i); })
     .y(function(d) { return yScale(d.measure); })
@@ -461,7 +464,7 @@ function updateLineChart(group, colorChosen) {
     var dsLength=currentDatasetLineChart.length;
     
     plot.select("text")
-        .text(currentDatasetLineChart[dsLength-1].measure)
+        .text(sum_measure(currentDatasetLineChart))
         ;
     /* descriptive titles -- end */
        
@@ -487,12 +490,17 @@ function updateLineChart(group, colorChosen) {
        .attr("r", 3.5)
        // add color
         .attr("stroke", colorChosen)
+        .select('title')
+        .text(function(d) {  return d.category + "h: " + d.measure; })
        ;
        
        path
        .selectAll("title")
-       .text(function(d) { return d.category + ": " + formatAsInteger(d.measure); })     
+       .text(function(d) { return d.category + ": " + d.measure; })     
        ;  
+    d3.select("#lineChartTitle1")
+      .data(currentDatasetLineChart)
+      .text(function(d) { return d.group; });
 
 }
 
@@ -501,7 +509,7 @@ function updateLineChart(group, colorChosen) {
 // 
 
 function dsPieChart2(){
-d3.csv("/static/data/data_piechart.csv?_=" + Math.random(), function(nodes) {    
+d3.csv("/static/data/data24hours_piechart.csv?_=" + Math.random(), function(nodes) {    
     var dataset = new Array();
     var index = 0;
     // Compute the distinct nodes from the links.
@@ -553,7 +561,7 @@ d3.csv("/static/data/data_piechart.csv?_=" + Math.random(), function(nodes) {
                .attr("fill", function(d, i) { return color(i); } ) //set the color for each slice to be chosen from the color function defined above
                .attr("d", arc)     //this creates the actual SVG path using the associated data (pie) with the arc drawing function
                     .append("svg:title") //mouseover title showing the figures
-                   .text(function(d) { return d.data.category + ": " + formatAsPercentage(d.data.measure); });          
+                   .text(function(d) { return d.data.category + ": " + d.data.measure; });          
 
         d3.selectAll("g.slice").selectAll("path").transition()
                 .duration(750)
@@ -625,7 +633,7 @@ dsPieChart2();
 -------------------------------------------
 */
 var datasetLineChart2 = new Array();
-d3.csv("/static/data/data_linechart.csv?_=" + Math.random(), function(nodes) {    
+d3.csv("/static/data/data24hours_linechart.csv?_=" + Math.random(), function(nodes) {    
     var index = 0;
     // Compute the distinct nodes from the links.
     nodes.forEach(function(node) {
@@ -643,15 +651,24 @@ function datasetLineChartChosen2(group) {
     var ds = [];
     for (x in datasetLineChart2) {
          if(datasetLineChart2[x].group==group){
+            datasetLineChart2[x].measure = parseInt(datasetLineChart2[x].measure)
+            datasetLineChart2[x].category = parseInt(datasetLineChart2[x].category)
             ds.push(datasetLineChart2[x]);
          } 
         }
+    ds.sort(function(a, b){
+        var keyA = parseInt(a.category),
+            keyB = parseInt(b.category);
+        if(keyA < keyB) return -1;
+        if(keyA > keyB) return 1;
+        return 0;
+    });
     return ds;
 }
 
 function dsLineChartBasics2() {
 
-    var margin = {top: 20, right: 10, bottom: 0, left: 50},
+    var margin = {top: 20, right: 10, bottom: 5, left: 50},
         width = 500 - margin.left - margin.right,
         height = 150 - margin.top - margin.bottom
         ;
@@ -682,8 +699,8 @@ function dsLineChart2() {
         ;
 
     var yScale = d3.scale.linear()
-        .domain([0, d3.max(firstDatasetLineChart2, function(d) { return d.measure; })])
-        .range([height, 0])
+        .domain([d3.max(firstDatasetLineChart2, function(d) { return d.measure; }), 0])
+        .range([0, height])
         ;
     
     var line = d3.svg.line()
@@ -708,8 +725,8 @@ function dsLineChart2() {
     var dsLength=firstDatasetLineChart2.length;
 
     plot.append("text")
-        .text(firstDatasetLineChart2[dsLength-1].measure)
-        .attr("id","lineChartTitle2")
+        .text(sum_measure(firstDatasetLineChart2))
+        .attr("id","lineChartTitle2_2")
         .attr("x",width/2)
         .attr("y",height/2) 
         ;
@@ -722,10 +739,10 @@ function dsLineChart2() {
         .attr("stroke", "lightgrey")
         ;
       
-    plot.selectAll(".dot")
+    plot.selectAll(".dot_2")
         .data(firstDatasetLineChart2)
          .enter().append("circle")
-        .attr("class", "dot")
+        .attr("class", "dot_2")
         //.attr("stroke", function (d) { return d.measure==datasetMeasureMin ? "red" : (d.measure==datasetMeasureMax ? "green" : "steelblue") } )
         .attr("fill", function (d) { return d.measure==d3.min(firstDatasetLineChart2, function(d) { return d.measure; }) ? "red" : (d.measure==d3.max(firstDatasetLineChart2, function(d) { return d.measure; }) ? "green" : "white") } )
         //.attr("stroke-width", function (d) { return d.measure==datasetMeasureMin || d.measure==datasetMeasureMax ? "3px" : "1.5px"} )
@@ -734,12 +751,13 @@ function dsLineChart2() {
         .attr("r", 3.5)
         .attr("stroke", "lightgrey")
         .append("title")
-        .text(function(d) { return d.category + ": " + formatAsInteger(d.measure); })
+        .text(function(d) { return d.category + "h: " + d.measure; })
         ;
 
     svg.append("text")
-        .text("Trending")
-        .attr("id","lineChartTitle1")   
+        .data(firstDatasetLineChart2)
+        .text(function(d) { return d.group; })
+        .attr("id","lineChartTitle1_2")   
         .attr("x",margin.left + ((width + margin.right)/2))
         .attr("y", 15)
         ;
@@ -769,8 +787,8 @@ function updateLineChart2(group, colorChosen) {
         ;
 
     var yScale = d3.scale.linear()
-        .domain([0, d3.max(currentDatasetLineChart2, function(d) { return d.measure; })])
-        .range([height, 0])
+        .domain([d3.max(currentDatasetLineChart2, function(d) { return d.measure; }), 0])
+        .range([0, height])
         ;
     
     var line = d3.svg.line()
@@ -786,7 +804,7 @@ function updateLineChart2(group, colorChosen) {
     var dsLength=currentDatasetLineChart2.length;
     
     plot.select("text")
-        .text(currentDatasetLineChart2[dsLength-1].measure)
+        .text(sum_measure(currentDatasetLineChart2))
         ;
     /* descriptive titles -- end */
        
@@ -801,23 +819,24 @@ function updateLineChart2(group, colorChosen) {
        ;
        
     var path = plot
-        .selectAll(".dot")
+        .selectAll(".dot_2")
        .data(currentDatasetLineChart2)
        .transition()
         .duration(750)
-       .attr("class", "dot")
+       .attr("class", "dot_2")
        .attr("fill", function (d) { return d.measure==d3.min(currentDatasetLineChart2, function(d) { return d.measure; }) ? "red" : (d.measure==d3.max(currentDatasetLineChart2, function(d) { return d.measure; }) ? "green" : "white") } )
        .attr("cx", line.x())
        .attr("cy", line.y())
        .attr("r", 3.5)
        // add color
         .attr("stroke", colorChosen)
+        .select('title')
+        .text(function(d) {  return d.category + "h: " + d.measure; })
        ;
-       
-       path
-       .selectAll("title")
-       .text(function(d) { return d.category + ": " + formatAsInteger(d.measure); })     
-       ;  
+
+    d3.select("#lineChartTitle1_2")
+      .data(currentDatasetLineChart2)
+      .text(function(d) { return d.group; });
 
 }
 
