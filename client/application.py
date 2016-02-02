@@ -6,29 +6,31 @@ import csv
 import re
 application = Flask(__name__)
 
-
 def cleaner(name):
-    black_list = ['Main_Page', '404_error', 'AutoLogin', 'Search', 'Suche', 'Hauptseite', 'Huvudsida',
-                  'Specjalna:Szukaj', 'Watchlist', 'index.html', 'Wikipedia:P%C3%A1gina_principal']
+    black_list = ['Main_Page','404_error', 'Special:Random' , 'Wikipedia:Hauptseite','Wikipedia:Portada','Special:AutoLogin','Spezial:Suche',
+                  'Spezial:Search','Portal:Huvudsida','Spezial:Zuf%C3%A4llige_Seite','index.html','Wikipedia:P%C3%A1gina_principal','w/index.php',
+                  'Special:Watchlist','Special:Search','Main20Page','Pagina_principale','A9diaAccueil_principal','Hauptseite','Hoofdpagina','C3B3wna',
+                  'C3A1gina_principal','Accueil_principal','P%C3%A1gina_principal','Strona_g%C5%82%C3%B3wna','Search'] 
+
     min_length = 3
-    pattern = re.compile(r'(%[A-Z0-9][A-Z0-9]){4}')
-    if name in black_list or len(name) < min_length or pattern.match(name):
+    pattern = re.compile(r'(%[A-Z0-9][A-Z0-9]){1}')
+    if name in black_list or len(name) < min_length or pattern.match(name) :
         return None
-    name = re.findall(r"[\w']+", name)
-    if len(name) < 2:
-        name = name[len(name) - 1]
+    name=re.split(':|/',name)
+    if len(name)<=3:
+        name=name[-1]
     else:
-        name = name[-2] + name[-1]
+        name=name[-2]+name[-1]
+    if name in black_list or pattern.match(name):
+        return None
     return name
+
 
 cluster = Cluster(['54.88.108.226'])
 session = cluster.connect()
 session.row_factory = dict_factory
 
 # Param
-black_list = ['Main_Page', 'Special:Search', '%']
-min_length = 3
-pattern = re.compile(r'(%[A-Z\d][A-Z\d]){4}')
 nb_pages = 10
 
 
