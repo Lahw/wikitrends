@@ -3,6 +3,7 @@
   <head>    
     <meta http-equiv="Content-type" content="text/html; charset=utf-8">
     <title>Wikipedia Trends</title>
+    <link rel="shortcut icon" type="image/png" href="static/favicon.jpg"/>
     <link href='/static/css/all.min.css?v=1.14' rel='stylesheet' type='text/css' />
    <!--<script type="text/javascript" src="d3/d3.v2.js"></script>-->
     <script src="http://d3js.org/d3.v2.js"></script>
@@ -137,7 +138,7 @@ td {
     
       <form action="#">
            <h2>Pick a date !</h2>
-              <input placeholder="Exemple: 2011-01-31" type="date" name="date" min="2011-01-01" max="2011-03-31"/>
+              <input placeholder="{{default_date}}" type="date" name="date" min="2011-01-01" max="2011-03-31"/>
               <input type="submit" />
       </form>
     </div>
@@ -165,6 +166,7 @@ function sum_measure( obj ) {
 -------------------------------------------
 */
 
+var formatAsInteger = d3.format(",");
 
 
 function dsPieChart(){
@@ -220,7 +222,7 @@ d3.csv("/static/data/data24hours_piechart.csv?_=" + Math.random(), function(node
                .attr("fill", function(d, i) { return color(i); } ) //set the color for each slice to be chosen from the color function defined above
                .attr("d", arc)     //this creates the actual SVG path using the associated data (pie) with the arc drawing function
                     .append("svg:title") //mouseover title showing the figures
-                   .text(function(d) { return d.data.category + ": " + d.data.measure; });          
+                   .text(function(d) { return d.data.category + ": " + formatAsInteger(d.data.measure); });          
 
         d3.selectAll("g.slice").selectAll("path").transition()
                 .duration(750)
@@ -385,7 +387,7 @@ function dsLineChart() {
     var dsLength=firstDatasetLineChart.length;
 
     plot.append("text")
-        .text(sum_measure(firstDatasetLineChart))
+        .text(formatAsInteger(sum_measure(firstDatasetLineChart)))
         .attr("id","lineChartTitle2")
         .attr("x",width/2)
         .attr("y",height/2) 
@@ -411,7 +413,7 @@ function dsLineChart() {
         .attr("r", 3.5)
         .attr("stroke", "lightgrey")
         .append("title")
-        .text(function(d) { return d.category + "h: " + d.measure; })
+        .text(function(d) { return d.category + "h: " + formatAsInteger(d.measure); })
         ;
 
     svg.append("text")
@@ -464,7 +466,7 @@ function updateLineChart(group, colorChosen) {
     var dsLength=currentDatasetLineChart.length;
     
     plot.select("text")
-        .text(sum_measure(currentDatasetLineChart))
+        .text(formatAsInteger(sum_measure(currentDatasetLineChart)))
         ;
     /* descriptive titles -- end */
        
@@ -491,12 +493,12 @@ function updateLineChart(group, colorChosen) {
        // add color
         .attr("stroke", colorChosen)
         .select('title')
-        .text(function(d) {  return d.category + "h: " + d.measure; })
+        .text(function(d) {  return d.category + "h: " + formatAsInteger(d.measure); })
        ;
        
        path
        .selectAll("title")
-       .text(function(d) { return d.category + ": " + d.measure; })     
+       .text(function(d) { return d.category + ": " + formatAsInteger(d.measure); })     
        ;  
     d3.select("#lineChartTitle1")
       .data(currentDatasetLineChart)
@@ -509,7 +511,7 @@ function updateLineChart(group, colorChosen) {
 // 
 
 function dsPieChart2(){
-d3.csv("/static/data/data24hours_piechart.csv?_=" + Math.random(), function(nodes) {    
+d3.csv("/static/data/data30days_piechart.csv?_=" + Math.random(), function(nodes) {    
     var dataset = new Array();
     var index = 0;
     // Compute the distinct nodes from the links.
@@ -561,7 +563,7 @@ d3.csv("/static/data/data24hours_piechart.csv?_=" + Math.random(), function(node
                .attr("fill", function(d, i) { return color(i); } ) //set the color for each slice to be chosen from the color function defined above
                .attr("d", arc)     //this creates the actual SVG path using the associated data (pie) with the arc drawing function
                     .append("svg:title") //mouseover title showing the figures
-                   .text(function(d) { return d.data.category + ": " + d.data.measure; });          
+                   .text(function(d) { return d.data.category + ": " + formatAsInteger(d.data.measure); });          
 
         d3.selectAll("g.slice").selectAll("path").transition()
                 .duration(750)
@@ -633,7 +635,7 @@ dsPieChart2();
 -------------------------------------------
 */
 var datasetLineChart2 = new Array();
-d3.csv("/static/data/data24hours_linechart.csv?_=" + Math.random(), function(nodes) {    
+d3.csv("/static/data/data30days_linechart.csv?_=" + Math.random(), function(nodes) {    
     var index = 0;
     // Compute the distinct nodes from the links.
     nodes.forEach(function(node) {
@@ -725,7 +727,7 @@ function dsLineChart2() {
     var dsLength=firstDatasetLineChart2.length;
 
     plot.append("text")
-        .text(sum_measure(firstDatasetLineChart2))
+        .text(formatAsInteger(sum_measure(firstDatasetLineChart2)))
         .attr("id","lineChartTitle2_2")
         .attr("x",width/2)
         .attr("y",height/2) 
@@ -751,7 +753,7 @@ function dsLineChart2() {
         .attr("r", 3.5)
         .attr("stroke", "lightgrey")
         .append("title")
-        .text(function(d) { return d.category + "h: " + d.measure; })
+        .text(function(d) { return d.category + ": " + formatAsInteger(d.measure); })
         ;
 
     svg.append("text")
@@ -804,7 +806,7 @@ function updateLineChart2(group, colorChosen) {
     var dsLength=currentDatasetLineChart2.length;
     
     plot.select("text")
-        .text(sum_measure(currentDatasetLineChart2))
+        .text(formatAsInteger(sum_measure(currentDatasetLineChart2)))
         ;
     /* descriptive titles -- end */
        
@@ -831,7 +833,7 @@ function updateLineChart2(group, colorChosen) {
        // add color
         .attr("stroke", colorChosen)
         .select('title')
-        .text(function(d) {  return d.category + "h: " + d.measure; })
+        .text(function(d) {  return d.category + ": " + formatAsInteger(d.measure); })
        ;
 
     d3.select("#lineChartTitle1_2")
