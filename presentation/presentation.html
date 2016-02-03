@@ -9,6 +9,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
   <link rel="stylesheet" href="reveal.js/css/reveal.css">
   <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
   <link rel="stylesheet" href="reveal.js/css/theme/black.css" id="theme">
   <!-- Printing and PDF exports -->
   <script>
@@ -38,12 +75,12 @@ wiki-trends.com
 Kubryk Maxime
 </section>
 </section>
-<section id="sommsaire" class="slide level1">
-<h1>Sommsaire</h1>
+<section id="sommaire" class="slide level1">
+<h1>Sommaire</h1>
 <ol type="1">
 <li>Serveur</li>
-<li>Client</li>
-<li>What did we learn ?</li>
+<li>Client web</li>
+<li>Retours d’expérience</li>
 </ol>
 </section>
 <section class="slide level1">
@@ -57,39 +94,136 @@ Serveur
 
 <h2 id="cluster-aws">Cluster AWS</h2>
 <ul>
-<li>6 instances M3.2xlarge avec facteur réplication de 3</li>
-<li>Utilisation d’une AMI DataStax</li>
+<li>6 instances M3.2xlarge avec facteur réplication de 2</li>
+<li>Utilisation d’une AMI DataStax (Cassandra et Spark)</li>
 <li>“Montage” du volume sur chaque noeud</li>
 </ul>
+<p><img src="./img/capture1.png" alt="cluster" /> <img src="./img/capture2.png" alt="cluster2" /></p>
 </section>
 <section class="slide level1">
 
-<h2 id="blabla">Blabla ?</h2>
+<h2 id="structure-des-tables">Structure des tables</h2>
+<ol type="1">
+<li>Une table par type de requête
+<ul>
+<li>wiki.trends_24hours: h0, h1, h2, h3…</li>
+<li>wiki.trends_30days: d0, d1, d2, d3…</li>
+</ul></li>
+</ol>
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span class="kw">CREATE</span> KEYSPACE <span class="kw">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> wiki
+    <span class="kw">WITH</span> replication = { <span class="st">&#39;class&#39;</span>: <span class="st">&#39;SimpleStrategy&#39;</span>, <span class="st">&#39;replication_factor&#39;</span>: <span class="st">&#39;2&#39;</span> }
+<span class="kw">CREATE</span> <span class="kw">table</span> wiki.trends_24hours (date_time <span class="dt">timestamp</span>, n_view bigint, name text,
+        h00 bigint, h01 bigint, h02 bigint, h03 bigint, h04 bigint, h05 bigint,
+        h06 bigint, h07 bigint, h08 bigint, h09 bigint, h10 bigint, h11 bigint,
+        h12 bigint, h13 bigint, h14 bigint, h15 bigint, h16 bigint, h17 bigint,
+        h18 bigint, h19 bigint, h20 bigint, h21 bigint, h22 bigint, h23 bigint,
+        <span class="kw">PRIMARY</span> <span class="kw">KEY</span>(date_time, n_view, name))
+<span class="kw">CREATE</span> <span class="kw">table</span> wiki.trends_30days (date_time <span class="dt">timestamp</span>, n_view bigint, name text,
+        d00 bigint, d01 bigint, d02 bigint, d03 bigint, d04 bigint, d05 bigint,
+        d06 bigint, d07 bigint, d08 bigint, d09 bigint, d10 bigint, d11 bigint,
+        d12 bigint, d13 bigint, d14 bigint, d15 bigint, d16 bigint, d17 bigint,
+        d18 bigint, d19 bigint, d20 bigint, d21 bigint, d22 bigint, d23 bigint,
+        d24 bigint, d25 bigint, d26 bigint, d27 bigint, d28 bigint, d29 bigint,
+        <span class="kw">PRIMARY</span> <span class="kw">KEY</span>(date_time, n_view, name))</code></pre></div>
+</section>
+<section class="slide level1">
+
+<h2 id="calculs-distribués-via-spark">Calculs distribués via Spark</h2>
+<ul>
+<li>RDD pour une journée</li>
+<li>RDD heure par heure</li>
+<li>Insertion dans Cassandra</li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="co">##############</span>
+<span class="co">## Compute sum</span>
+<span class="co">##############</span>
+<span class="co"># group by name / month / day</span>
+rdd_24hours <span class="op">=</span> rdd.<span class="bu">map</span>(<span class="kw">lambda</span> x: (x[<span class="st">&#39;name&#39;</span>] <span class="op">+</span> <span class="st">&#39; &#39;</span> <span class="op">+</span> x[<span class="st">&#39;date_time&#39;</span>][:<span class="dv">10</span>], x[<span class="st">&#39;n_view&#39;</span>]))
+<span class="co"># sum the n_view</span>
+rdd_24hours <span class="op">=</span> rdd_24hours.reduceByKey(<span class="kw">lambda</span> a, b: a <span class="op">+</span> b)
+<span class="co"># rebuild</span>
+rdd_24hours_sum <span class="op">=</span> rdd_24hours.<span class="bu">map</span>(<span class="kw">lambda</span> x: {<span class="st">&#39;name&#39;</span>: x[<span class="dv">0</span>].split(<span class="st">&#39; &#39;</span>)[<span class="dv">0</span>], <span class="st">&#39;date_time&#39;</span>: x[<span class="dv">0</span>].split(<span class="st">&#39; &#39;</span>)[<span class="dv">1</span>], <span class="st">&#39;n_view&#39;</span>: x[<span class="dv">1</span>]})
+
+<span class="co">############################</span>
+<span class="co">## Get n_view for each hour</span>
+<span class="co">############################</span>
+<span class="co"># same logic as before</span>
+rdd_24hours_hours <span class="op">=</span> rdd.<span class="bu">map</span>(<span class="kw">lambda</span> x: (x[<span class="st">&#39;name&#39;</span>] <span class="op">+</span> <span class="st">&#39; &#39;</span> <span class="op">+</span> x[<span class="st">&#39;date_time&#39;</span>][:<span class="dv">10</span>], x[<span class="st">&#39;date_time&#39;</span>][<span class="dv">11</span>:<span class="dv">13</span>] <span class="op">+</span> <span class="st">&#39; &#39;</span> <span class="op">+</span> <span class="bu">str</span>(x[<span class="st">&#39;n_view&#39;</span>])))
+rdd_24hours_hours <span class="op">=</span> rdd_24hours_hours.reduceByKey(<span class="kw">lambda</span> a, b: a <span class="op">+</span> <span class="st">&#39;,&#39;</span> <span class="op">+</span> b)</code></pre></div>
 </section>
 </section>
 <section class="slide level1">
 
 <section>
 <h1>
-Client
+Client web
 </h1>
 </section>
 <section class="slide level1">
 
-<h2 id="blabla-1">Blabla</h2>
+<h2 id="framework">Framework</h2>
+<p><img src="./img/flask.png" alt="flask" /> <img src="./img/d3.jpeg" alt="d3js" /></p>
+</section>
+<section class="slide level1">
+
+<h2 id="mise-en-production">Mise en production</h2>
+<ul>
+<li>Application déployée avec AWS Elastic Beanstalk</li>
+<li>“wiki-trends.com” acheté et redirigé avec AWS Route 53</li>
+<li>Requête <strong>directement</strong> le cluster AWS</li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python">cluster <span class="op">=</span> Cluster([<span class="st">&#39;54.88.108.226&#39;</span>])
+session <span class="op">=</span> cluster.<span class="ex">connect</span>()
+session.row_factory <span class="op">=</span> dict_factory
+query <span class="op">=</span> <span class="st">&quot;SELECT * FROM wiki.trends_&quot;</span> <span class="op">+</span> mode <span class="op">+</span> <span class="op">\</span>
+        <span class="co">&quot; WHERE date_time = &#39;&quot;</span> <span class="op">+</span> date_string <span class="op">+</span> <span class="op">\</span>
+        <span class="co">&quot;&#39; ORDER BY n_view DESC LIMIT 10;&quot;</span>
+raws <span class="op">=</span> session.execute(query)</code></pre></div>
 </section>
 </section>
 <section class="slide level1">
 
 <section>
 <h1>
-What did we learn ?
+Retours d’expérience
 </h1>
 </section>
 <section class="slide level1">
 
-<h2 id="blabla-2">Blabla</h2>
+<h2 id="des-hauts-et-des-bas">Des hauts et des bas</h2>
+<ol type="1">
+<li>Cluster tombé plusieurs fois
+<ul>
+<li>Changement du fichier de configuration</li>
+<li>Stop / Restart des instances</li>
+</ul></li>
+<li>Une première architecture stérile
+<ul>
+<li>Vision trop SQL</li>
+</ul></li>
+<li>Une table qui disparaît (???)</li>
+</ol>
 </section>
+<section class="slide level1">
+
+<h2 id="cassandra-sans-spark-cest-pas-bien">Cassandra sans Spark c’est pas bien :)</h2>
+<ul>
+<li>Connaitre son besoin avant de créer une table</li>
+<li>Peu de flexibilité CQL sur Cassandra 2.1</li>
+<li>Rapidité du calcul via Spark</li>
+</ul>
+</section>
+</section>
+<section id="axes-améliorations" class="slide level1">
+<h1>Axes Améliorations</h1>
+<ol type="1">
+<li>Tests aux différentes pannes</li>
+<li>Création d’une API sur le serveur</li>
+<li>Quelques glitch dans D3.js</li>
+</ol>
+</section>
+<section id="questions" class="slide level1">
+<h1>Questions ?</h1>
 </section>
     </div>
   </div>

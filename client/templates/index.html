@@ -12,8 +12,8 @@
 
 #pickADate {
     position:absolute;
-    top:10px;
-    left:450px;
+    top:15px;
+    left:440px;
     width:400px;
     height: 50px; 
 }
@@ -138,7 +138,7 @@ td {
     
       <form action="#">
            <h2>Pick a date !</h2>
-              <input placeholder="{{default_date}}" type="date" name="date" min="2011-01-01" max="2011-03-31"/>
+              <input placeholder="{{default_date}}" type="date" name="date" min="2011-02-01" max="2011-02-15"/>
               <input type="submit" />
       </form>
     </div>
@@ -170,7 +170,7 @@ var formatAsInteger = d3.format(",");
 
 
 function dsPieChart(){
-d3.csv("/static/data/data24hours_piechart.csv?_=" + Math.random(), function(nodes) {    
+d3.csv("/static/{{folder_name}}/data24hours_piechart.csv?_=" + Math.random(), function(nodes) {    
     var dataset = new Array();
     var index = 0;
     // Compute the distinct nodes from the links.
@@ -294,7 +294,7 @@ dsPieChart();
 -------------------------------------------
 */
 var datasetLineChart = new Array();
-d3.csv("/static/data/data24hours_linechart.csv?_=" + Math.random(), function(nodes) {    
+d3.csv("/static/{{folder_name}}/data24hours_linechart.csv?_=" + Math.random(), function(nodes) {    
     var index = 0;
     // Compute the distinct nodes from the links.
     nodes.forEach(function(node) {
@@ -511,7 +511,7 @@ function updateLineChart(group, colorChosen) {
 // 
 
 function dsPieChart2(){
-d3.csv("/static/data/data30days_piechart.csv?_=" + Math.random(), function(nodes) {    
+d3.csv("/static/{{folder_name}}/data30days_piechart.csv?_=" + Math.random(), function(nodes) {    
     var dataset = new Array();
     var index = 0;
     // Compute the distinct nodes from the links.
@@ -635,7 +635,7 @@ dsPieChart2();
 -------------------------------------------
 */
 var datasetLineChart2 = new Array();
-d3.csv("/static/data/data30days_linechart.csv?_=" + Math.random(), function(nodes) {    
+d3.csv("/static/{{folder_name}}/data30days_linechart.csv?_=" + Math.random(), function(nodes) {    
     var index = 0;
     // Compute the distinct nodes from the links.
     nodes.forEach(function(node) {
